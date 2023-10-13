@@ -2,8 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,14 +19,16 @@ public class GameManager : MonoBehaviour
     char?[] guess  = new char?[wordLenght];
     char[] word = new char[wordLenght];
     [SerializeField] private GameObject wordNotFound;
-    [SerializeField] private TextMeshProUGUI wonText;
+    [SerializeField] private GameObject wonPanel;
+    [SerializeField] private GameObject losePanel;
     List<Letter> letters = null;
     public GameState gameState { get; private set; } = GameState.InProgress;
     private Action restarted;
-  
+    
 
     private void Awake()
     {
+       
         SetupGrid();
         foreach (Key key in keys)
         {
@@ -37,12 +37,13 @@ public class GameManager : MonoBehaviour
     }
     void Start()
     {
+       
         SetWord();
     }
 
     void Update()
     {
-        
+        if(!StartManager.Instance.isGameStarted) return;
         if (Input.anyKeyDown)
         { 
             ParseInput(Input.inputString);
@@ -52,7 +53,8 @@ public class GameManager : MonoBehaviour
 
     public void Restart()
     {
-        wonText.gameObject.SetActive(false);
+        wonPanel.gameObject.SetActive(false);
+        losePanel.gameObject.SetActive(false);
         gameState = GameState.InProgress;
         foreach (Letter letter in letters)
         {
@@ -281,13 +283,14 @@ public class GameManager : MonoBehaviour
                     if (currentRow>=amountOfRows)
                     {
                         gameState = GameState.Failed;
+                        StartCoroutine(GameFinalController(losePanel, wordLenght * letterAnimWaitTime));
                     }
 
                 }
                 else
                 {
                     gameState = GameState.Complete;
-                    wonText.gameObject.SetActive(true);
+                    StartCoroutine(GameFinalController(wonPanel, wordLenght * letterAnimWaitTime));
                 }
             }
             else
@@ -296,6 +299,13 @@ public class GameManager : MonoBehaviour
                 StartCoroutine(WordNotFound(wordNotFound, .5f));
             }
         }
+    }
+
+    IEnumerator GameFinalController(GameObject panel, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        panel.SetActive(true);
+        
     }
     IEnumerator PlayLetter(float value, int index, LetterState state)
     {
